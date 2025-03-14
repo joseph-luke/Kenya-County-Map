@@ -6,7 +6,7 @@
     "scripts": {
         "start": "serve .",
         "clean": "rimraf build",
-        "build": "npm run clean && mkdir build && copy index.html build\\ && copy style.css build\\ && copy renderer.js build\\ && copy county_map_data.json build\\ && copy package.json build\\",
+        "build": "npm run clean && mkdir build && copy index.html build\\ && copy style.css build\\ && copy renderer.js build\\ && copy county_map_data.json build\\ && copy package.json build\\ && copy -r node_modules build\\",
         "predeploy": "npm run build",
         "deploy": "gh-pages -d build"
     },
