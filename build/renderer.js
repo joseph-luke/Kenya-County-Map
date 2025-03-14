@@ -92,10 +92,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = await response.json();
     console.log('Map data parsed successfully');
     const geojson = data.geojson;
-    const viewState = data.viewState;
+    const viewState = data.viewState || {
+      latitude: 0.0236,
+      longitude: 37.9062,
+      zoom: 5.5,
+      pitch: 0,
+      bearing: 0
+    };
 
-    if (!geojson || !viewState) {
-      throw new Error('Invalid data format: missing geojson or viewState');
+    if (!geojson) {
+      throw new Error('Invalid data format: missing geojson data');
     }
 
     // Compute min and max values for a given metric.
@@ -104,16 +110,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       return [Math.min(...values), Math.max(...values)];
     }
     let [minValue, maxValue] = computeMetricRange(currentMetric);
+    
     function normalizeValue(value) {
       if (maxValue === minValue) return 0;
       return (value - minValue) / (maxValue - minValue);
     }
+    
     function getFillColor(feature) {
       const value = feature.properties[currentMetric] || 0;
       const normalizedValue = normalizeValue(value);
       const color = chroma.scale(palettes[currentPalette])(normalizedValue).rgb();
       return [...color, 255];
     }
+    
     function onHover(info) {
       const tooltip = document.getElementById('tooltip');
       if (!info.object || isDragging) {
@@ -130,13 +139,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       `;
     }
+    
     function formatValue(value) {
       if (value === 0) return '0';
       const rounded = Number(value.toPrecision(2));
       return rounded.toLocaleString();
     }
+    
     function createLayer() {
-      return new deck.GeoJsonLayer({
+      return new GeoJsonLayer({
         id: 'county-layer',
         data: geojson,
         stroked: true,
@@ -157,7 +168,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
     }
-    const deckgl = new deck.DeckGL({
+
+    const deckgl = new DeckGL({
       container: 'map-container',
       initialViewState: viewState,
       controller: true,
