@@ -6,7 +6,7 @@
     "scripts": {
         "start": "serve .",
         "clean": "rimraf build",
-        "build": "npm run clean && mkdir build && copy index.html build\\ && copy style.css build\\ && copy renderer.js build\\ && copy county_map_data.json build\\ && copy package.json build\\ && copy -r node_modules build\\",
+        "build": "npm run clean && mkdir build && copy index.html build\\ && copy style.css build\\ && copy renderer.js build\\ && copy county_map_data.json build\\ && copy package.json build\\",
         "predeploy": "npm run build",
         "deploy": "gh-pages -d build"
     },
@@ -14,13 +14,10 @@
     "license": "MIT",
     "dependencies": {
         "chroma-js": "^2.1.0",
-        "deck.gl": "^8.8.20",
-        "ms": "^2.1.3",
+        "deck.gl": "8.9.32",
         "serve": "^14.2.1"
     },
     "devDependencies": {
-        "electron": "^35.0.0",
-        "electron-builder": "^24.0.0",
         "gh-pages": "^6.3.0",
         "rimraf": "^5.0.5"
     },

@@ -342,3 +342,87 @@ body, html {
 .palette-option:hover {
   background-color: #f0f0f0;
 }
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+}
+
+#map-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: #ffffff;
+}
+
+svg {
+  width: 100%;
+  height: 100%;
+}
+
+.county {
+  stroke: #fff;
+  stroke-width: 0.5px;
+  transition: opacity 0.2s;
+}
+
+.county:hover {
+  opacity: 0.8;
+  cursor: pointer;
+}
+
+#tooltip {
+  position: absolute;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  pointer-events: none;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: none;
+}
+
+#controls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: white;
+  padding: 15px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+select {
+  margin: 5px 0;
+  padding: 5px;
+  width: 200px;
+}
+
+#legend {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: white;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin: 5px 0;
+}
+
+.legend-color {
+  width: 20px;
+  height: 20px;
+  margin-right: 8px;
+}
+
+.legend-label {
+  font-size: 12px;
+}

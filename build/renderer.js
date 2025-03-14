@@ -2,6 +2,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentPalette = 'red';
   let currentMetric = 'Population';
   let isDragging = false;
+  let deckgl;
+
+  // Get deck.gl components from the global scope
+  const {DeckGL, GeoJsonLayer} = deck;
 
   // Updated hardcoded legend offsets for each metric.
   const legendOffsets = {
@@ -92,19 +96,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     const data = await response.json();
     console.log('Map data parsed successfully');
     const geojson = data.geojson;
-    const viewState = data.viewState || {
-      latitude: 0.0236,
-      longitude: 37.9062,
-      zoom: 5.5,
-      pitch: 0,
-      bearing: 0
-    };
 
     if (!geojson) {
       throw new Error('Invalid data format: missing geojson data');
     }
 
-    // Compute min and max values for a given metric.
+    // Compute min and max values for a given metric
     function computeMetricRange(metric) {
       const values = geojson.features.map(f => f.properties[metric] || 0);
       return [Math.min(...values), Math.max(...values)];
@@ -122,59 +119,84 @@ document.addEventListener('DOMContentLoaded', async () => {
       const color = chroma.scale(palettes[currentPalette])(normalizedValue).rgb();
       return [...color, 255];
     }
-    
-    function onHover(info) {
-      const tooltip = document.getElementById('tooltip');
-      if (!info.object || isDragging) {
-        tooltip.style.display = 'none';
-        return;
-      }
-      tooltip.style.display = 'block';
-      tooltip.style.left = `${info.x}px`;
-      tooltip.style.top = `${info.y}px`;
-      tooltip.innerHTML = `
-        <div style="background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
-          <strong>County:</strong> ${info.object.properties.county}<br/>
-          <strong>${currentMetric}:</strong> ${formatValue(info.object.properties[currentMetric] || 0)}
-        </div>
-      `;
-    }
-    
+
     function formatValue(value) {
       if (value === 0) return '0';
       const rounded = Number(value.toPrecision(2));
       return rounded.toLocaleString();
     }
-    
-    function createLayer() {
-      return new GeoJsonLayer({
-        id: 'county-layer',
-        data: geojson,
-        stroked: true,
-        filled: true,
-        pickable: true,
-        getFillColor: getFillColor,
-        getLineColor: [80, 80, 80, 255],
-        lineWidthMinPixels: 0.6,
-        onHover: onHover,
-        updateTriggers: {
-          getFillColor: [currentPalette, currentMetric]
-        },
-        transitions: {
-          getFillColor: {
-            duration: 3000,
-            easing: t => (--t) * t * t + 1
-          }
-        }
-      });
-    }
 
-    const deckgl = new DeckGL({
+    // Initialize deck.gl
+    const INITIAL_VIEW_STATE = {
+      latitude: 0.5,
+      longitude: 37.5,
+      zoom: 5.2,
+      maxZoom: 16,
+      pitch: 0,
+      bearing: 0
+    };
+
+    deckgl = new DeckGL({
       container: 'map-container',
-      initialViewState: viewState,
+      initialViewState: INITIAL_VIEW_STATE,
       controller: true,
-      layers: [createLayer()]
+      onViewStateChange: ({viewState}) => {
+        deckgl.setProps({viewState});
+      },
+      getTooltip: ({object}) => {
+        if (!object || isDragging) return null;
+        
+        return {
+          html: `
+            <div style="background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
+              <strong>County:</strong> ${object.properties.county}<br/>
+              <strong>${currentMetric}:</strong> ${formatValue(object.properties[currentMetric] || 0)}
+            </div>
+          `,
+          style: {
+            backgroundColor: 'transparent',
+            boxShadow: 'none'
+          }
+        };
+      },
+      layers: [
+        new GeoJsonLayer({
+          id: 'geojson',
+          data: geojson,
+          pickable: true,
+          stroked: true,
+          filled: true,
+          extruded: false,
+          lineWidthScale: 1,
+          lineWidthMinPixels: 1,
+          getFillColor: getFillColor,
+          getLineColor: [80, 80, 80, 255],
+          getLineWidth: 1
+        })
+      ]
     });
+
+    function updateMap() {
+      [minValue, maxValue] = computeMetricRange(currentMetric);
+      deckgl.setProps({
+        layers: [
+          new GeoJsonLayer({
+            id: 'geojson',
+            data: geojson,
+            pickable: true,
+            stroked: true,
+            filled: true,
+            extruded: false,
+            lineWidthScale: 1,
+            lineWidthMinPixels: 1,
+            getFillColor: getFillColor,
+            getLineColor: [80, 80, 80, 255],
+            getLineWidth: 1
+          })
+        ]
+      });
+      updateLegend();
+    }
 
     // ----------------------------------------------------------------
     // updateTitle: Fade out title inner text and the metric icon,
@@ -276,12 +298,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 3000);
       }
     }
-    
 
     // ----------------------------------------------------------------
     // renderLegend: Build the legend items (colorbar and labels) only.
-    // The legend title ("Count") remains unchanged.
-    // In renderLegend(), update the label transform:
     function renderLegend() {
       [minValue, maxValue] = computeMetricRange(currentMetric);
       const legendItems = document.getElementById('legend-items');
@@ -323,7 +342,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       legendItems.appendChild(innerContainer);
     }
 
-    // Initial render of legend items.
+    // Initial render of legend items
     renderLegend();
 
     // ----------------------------------------------------------------
@@ -346,7 +365,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const palette = e.target.dataset.palette;
         if (palette && palette !== currentPalette) {
           currentPalette = palette;
-          deckgl.setProps({ layers: [createLayer()] });
+          updateMap();
           updateLegendColor();
         }
         document.getElementById('palette-control-container').classList.remove('expanded');
@@ -416,9 +435,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           } else {
             updateTitle(`${metric} in Kenya`);
           }
-          [minValue, maxValue] = computeMetricRange(currentMetric);
-          deckgl.setProps({ layers: [createLayer()] });
-          updateLegend();
+          updateMap();
         }
         // Close all expanded categories
         document.querySelectorAll('.metric-category').forEach(category => {
