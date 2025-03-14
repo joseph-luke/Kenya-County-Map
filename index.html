@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Kenya County Map</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/deck.gl@8.8.20/dist.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.1.0/chroma.min.js"></script>
+</head>
+<body>
+  <!-- Header with title and metric dropdown -->
+  <div id="header">
+    <div id="title">
+      <span class="title-text">Population of Kenya</span>
+    </div>
+    <div id="metric-dropdown">
+      <button id="metric-button">
+        <span class="metric-icon">&#8942;</span>
+      </button>
+      <div id="metric-options">
+        <button class="metric-option" data-metric="Population">Population</button>
+        <div class="metric-category">
+          <button class="metric-category-btn">Marital Status</button>
+          <div class="metric-suboptions">
+            <button class="metric-option" data-metric="Married Monogamous">Married Monogamous</button>
+            <button class="metric-option" data-metric="Married Polygamous">Married Polygamous</button>
+            <button class="metric-option" data-metric="Living Together">Living Together</button>
+            <button class="metric-option" data-metric="Separated">Separated</button>
+            <button class="metric-option" data-metric="Divorced">Divorced</button>
+            <button class="metric-option" data-metric="Widow or Widowed">Widow or Widowed</button>
+            <button class="metric-option" data-metric="Never Married">Never Married</button>
+          </div>
+        </div>
+        <div class="metric-category">
+          <button class="metric-category-btn">Level of Education</button>
+          <div class="metric-suboptions">
+            <button class="metric-option" data-metric="No Education">No Education</button>
+            <button class="metric-option" data-metric="Lower Primary">Lower Primary</button>
+            <button class="metric-option" data-metric="Upper Primary">Upper Primary</button>
+            <button class="metric-option" data-metric="Secondary">Secondary</button>
+            <button class="metric-option" data-metric="Middle-Level College">Middle-Level College</button>
+            <button class="metric-option" data-metric="University Undergraduate">University Undergraduate</button>
+            <button class="metric-option" data-metric="University Masters/PhD">University Masters/PhD</button>
+            <button class="metric-option" data-metric="Adult Basic Education">Adult Basic Education</button>
+            <button class="metric-option" data-metric="Vocational Training">Vocational Training</button>
+            <button class="metric-option" data-metric="Madrasa/Duksi">Madrasa/Duksi</button>
+          </div>
+        </div>
+        <div class="metric-category">
+          <button class="metric-category-btn">Type of Housing</button>
+          <div class="metric-suboptions">
+            <button class="metric-option" data-metric="Bungalow">Bungalow</button>
+            <button class="metric-option" data-metric="Flat">Flat</button>
+            <button class="metric-option" data-metric="Maisonnette">Maisonnette</button>
+            <button class="metric-option" data-metric="Swahili">Swahili</button>
+            <button class="metric-option" data-metric="Shanty">Shanty</button>
+            <button class="metric-option" data-metric="Manyatta/Traditional House">Manyatta/Traditional House</button>
+            <button class="metric-option" data-metric="Landhie">Landhie</button>
+          </div>
+        </div>
+        <div class="metric-category">
+          <button class="metric-category-btn">Housing Tenure</button>
+          <div class="metric-suboptions">
+            <button class="metric-option" data-metric="Owns">Owns</button>
+            <button class="metric-option" data-metric="Pays Rent/Lease">Pays Rent/Lease</button>
+            <button class="metric-option" data-metric="No Rent, with Consent of Owner">No Rent, with Consent of Owner</button>
+            <button class="metric-option" data-metric="No Rent, Squatting">No Rent, Squatting</button>
+          </div>
+        </div>
+        <div class="metric-category">
+          <button class="metric-category-btn">Cooking Energy Source</button>
+          <div class="metric-suboptions">
+            <button class="metric-option" data-metric="Electricity">Electricity</button>
+            <button class="metric-option" data-metric="Paraffin">Paraffin</button>
+            <button class="metric-option" data-metric="LPG (Gas)">LPG (Gas)</button>
+            <button class="metric-option" data-metric="Biogas">Biogas</button>
+            <button class="metric-option" data-metric="Firewood">Firewood</button>
+            <button class="metric-option" data-metric="Charcoal">Charcoal</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div id="map-container" style="width:100%; height:100vh;"></div>
+  <div id="tooltip" style="position: absolute; pointer-events: none; z-index: 1000; display: none;"></div>
+  
+  <!-- Legend with inner content wrapper -->
+  <div id="legend">
+    <div id="legend-content">
+      <div id="legend-title">Count</div>
+      <div id="legend-items"></div>
+    </div>
+  </div>
+  
+  <!-- Palette control (unchanged) -->
+  <div id="palette-control-container">
+    <button id="palette-control">
+      <span class="icon">
+        <span class="line"></span>
+        <span class="line"></span>
+        <span class="line"></span>
+      </span>
+    </button>
+    <div id="palette-options">
+      <button class="palette-option" data-palette="red">Red</button>
+      <button class="palette-option" data-palette="blue">Blue</button>
+      <button class="palette-option" data-palette="greyscale">Greyscale</button>
+    </div>
+  </div>
+  
+  <script src="renderer.js"></script>
+</body>
+</html>
