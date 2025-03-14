@@ -1,0 +1,30 @@
+{
+    "name": "kenya-population-map",
+    "version": "2.0.0",
+    "description": "Interactive map of Kenya county data",
+    "main": "main.js",
+    "scripts": {
+      "start": "electron .",
+      "build": "electron-builder --windows portable",
+      "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "Your Name",
+    "license": "MIT",
+    "dependencies": {
+      "chroma-js": "^2.1.0",
+      "deck.gl": "^8.8.20",
+      "ms": "^2.1.3"
+    },
+    "devDependencies": {
+      "electron": "^35.0.0",
+      "electron-builder": "^24.0.0"
+    },
+    "build": {
+      "appId": "com.example.kenya-population-map",
+      "productName": "Kenya Population Map",
+      "icon": "build/app-icon.ico",
+      "win": {
+        "target": "portable"
+      }
+    }
+  }

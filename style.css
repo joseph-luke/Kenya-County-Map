@@ -1,0 +1,344 @@
+:root {
+  --palette-gap: 10px; /* Gap between palette options */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #e3e3e3;
+  font-family: Candara, sans-serif;
+  overflow: hidden;
+}
+
+::-webkit-scrollbar {
+  display: none;
+}
+
+#tooltip {
+  font-size: 14px;
+}
+
+/* Header container */
+#header {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  z-index: 1001;
+}
+
+/* Title container – fixed height, one line, smooth width transition. */
+#title {
+  font-family: Candara, sans-serif;
+  font-size: 20px;
+  font-weight: bold;
+  color: #000;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 5px 10px;
+  border-radius: 5px;
+  margin-right: 10px;
+  pointer-events: auto;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.2;
+  transition: width 0.7s ease;
+  width: auto;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Title inner text */
+.title-text {
+  display: inline-block;
+  transition: opacity 0.3s ease;
+  opacity: 1;
+}
+
+/* Metric dropdown */
+#metric-dropdown {
+  position: relative;
+}
+
+/* Metric button: 35x35px circular */
+#metric-button {
+  width: 35px;
+  height: 35px;
+  border: none;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Vertical ellipsis icon */
+.metric-icon {
+  font-size: 30px;
+  color: #000;
+  transition: opacity 0.3s ease;
+  opacity: 1;
+}
+
+/* Metric options dropdown */
+#metric-options {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  margin-top: 5px;
+  z-index: 1002;
+  min-width: 200px;
+  overflow: hidden;
+}
+
+#metric-options .metric-option {
+  padding: 8px 10px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  text-align: left;
+  width: 100%;
+  font-family: Candara, sans-serif;
+  font-size: 14px;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+#metric-options .metric-option[data-metric="Population"] {
+  font-weight: normal;
+  text-align: center;
+  font-size: 15px;
+}
+
+#metric-options .metric-option:hover {
+  background: #f0f0f0;
+}
+
+/* Metric category styles */
+.metric-category {
+  position: relative;
+}
+
+.metric-category-btn {
+  padding: 8px 10px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  text-align: center;
+  width: 100%;
+  font-family: Candara, sans-serif;
+  font-weight: normal;
+  color: #000;
+  font-size: 15px;
+}
+
+.metric-category-btn:hover {
+  background: #f0f0f0;
+}
+
+/* Metric suboptions */
+.metric-suboptions {
+  max-height: 0;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.95);
+  padding-left: 10px;
+  transition: max-height 0.3s ease-in-out;
+}
+
+.metric-category.expanded .metric-suboptions {
+  max-height: 500px; /* Large enough to accommodate all options */
+}
+
+.metric-suboptions .metric-option {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #555;
+  text-align: left;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+.metric-suboptions .metric-option:hover {
+  background: #f0f0f0;
+  color: #000;
+}
+
+/* Legend container – fixed size, centered content */
+#legend {
+  position: absolute;
+  top: 30px;
+  right: 40px;
+  /* Fixed size so it never resizes */
+  width: 150px;
+  padding: 10px 15px 20px 15px;  /* Added extra bottom padding (20px) */
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Legend content now uses a grid:
+   first row for title, second row for items with a gap */
+#legend-content {
+  display: grid;
+  grid-template-rows: auto auto;
+  justify-items: center;
+  row-gap: 10px; /* gap between "Count" and the items */
+}
+
+/* Legend title – remains constant */
+#legend-title {
+  font-weight: 500;
+  font-family: Candara, sans-serif;
+  text-align: center;
+}
+
+/* Legend items (colorbar and labels) */
+#legend-items {
+  /* The inner container will be offset via transform */
+  transition: opacity 0.3s ease;
+}
+
+/* Gradient bar */
+.legend-gradient {
+  width: 22px;
+  height: 180px;
+  margin-right: 22px;
+  position: relative; /* Added for overlay positioning */
+}
+
+
+/* Legend labels container */
+.legend-labels {
+  position: relative;
+  height: 180px;
+  min-width: 70px;
+}
+
+/* Legend labels */
+.legend-label {
+  position: absolute;
+  left: 0;
+  font-size: 16px;
+  font-weight: 400;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.legend-label:first-child {
+  transform: translateY(0%); /* top aligns with top of colorbar */
+}
+
+.legend-label:last-child {
+  transform: translateY(-100%); /* bottom aligns with bottom of colorbar */
+}
+
+/* Palette Control Container */
+#palette-control-container {
+  position: absolute;
+  top: calc(90px + 180px + var(--palette-gap));
+  right: 55px;
+  width: 120px;
+  z-index: 1001;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#palette-control {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  outline: none;
+}
+
+#palette-control .icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  transition: opacity 0.3s ease;
+}
+
+#palette-control .line {
+  width: 20px;
+  height: 2px;
+  background-color: #000;
+  margin: 2px 0;
+  transition: background-color 0.3s;
+}
+
+#palette-options {
+  max-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: var(--palette-gap);
+  margin-top: var(--palette-gap);
+  transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#palette-control-container.expanded #palette-control .icon {
+  opacity: 0;
+}
+
+#palette-control-container.expanded #palette-options {
+  max-height: 200px; /* Enough height to show all palette options */
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.palette-option {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.2s ease;
+  font-family: Candara, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  transform: translateY(-5px);
+  opacity: 0;
+}
+
+#palette-control-container.expanded .palette-option {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+/* Add staggered animation delays for each palette option */
+.palette-option:nth-child(1) { transition-delay: 0.05s; }
+.palette-option:nth-child(2) { transition-delay: 0.1s; }
+.palette-option:nth-child(3) { transition-delay: 0.15s; }
+
+.palette-option:hover {
+  background-color: #f0f0f0;
+}
