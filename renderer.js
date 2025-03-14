@@ -2,7 +2,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentPalette = 'red';
   let currentMetric = 'Population';
   let isDragging = false;
-  let deck;
+  let deckgl;
+
+  // Destructure required components from the global deck object
+  const {DeckGL, GeoJsonLayer} = deck;
 
   // Updated hardcoded legend offsets for each metric.
   const legendOffsets = {
@@ -133,12 +136,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       bearing: 0
     };
 
-    deck = new deck.DeckGL({
+    deckgl = new DeckGL({
       container: 'map-container',
       initialViewState: INITIAL_VIEW_STATE,
       controller: true,
       onViewStateChange: ({viewState}) => {
-        deck.setProps({viewState});
+        deckgl.setProps({viewState});
       },
       getTooltip: ({object}) => {
         if (!object || isDragging) return null;
@@ -157,7 +160,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
       },
       layers: [
-        new deck.GeoJsonLayer({
+        new GeoJsonLayer({
           id: 'geojson',
           data: geojson,
           pickable: true,
@@ -175,9 +178,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateMap() {
       [minValue, maxValue] = computeMetricRange(currentMetric);
-      deck.setProps({
+      deckgl.setProps({
         layers: [
-          new deck.GeoJsonLayer({
+          new GeoJsonLayer({
             id: 'geojson',
             data: geojson,
             pickable: true,
