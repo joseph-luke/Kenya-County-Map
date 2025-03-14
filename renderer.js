@@ -82,326 +82,340 @@ document.addEventListener('DOMContentLoaded', async () => {
       .colors(256)
   };
 
-  const response = await fetch('county_map_data.json');
-  const data = await response.json();
-  const geojson = data.geojson;
-  const viewState = data.viewState;
-
-  // Compute min and max values for a given metric.
-  function computeMetricRange(metric) {
-    const values = geojson.features.map(f => f.properties[metric] || 0);
-    return [Math.min(...values), Math.max(...values)];
-  }
-  let [minValue, maxValue] = computeMetricRange(currentMetric);
-  function normalizeValue(value) {
-    if (maxValue === minValue) return 0;
-    return (value - minValue) / (maxValue - minValue);
-  }
-  function getFillColor(feature) {
-    const value = feature.properties[currentMetric] || 0;
-    const normalizedValue = normalizeValue(value);
-    const color = chroma.scale(palettes[currentPalette])(normalizedValue).rgb();
-    return [...color, 255];
-  }
-  function onHover(info) {
-    const tooltip = document.getElementById('tooltip');
-    if (!info.object || isDragging) {
-      tooltip.style.display = 'none';
-      return;
+  try {
+    console.log('Fetching map data...');
+    const response = await fetch('county_map_data.json');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-    tooltip.style.display = 'block';
-    tooltip.style.left = `${info.x}px`;
-    tooltip.style.top = `${info.y}px`;
-    tooltip.innerHTML = `
-      <div style="background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
-        <strong>County:</strong> ${info.object.properties.county}<br/>
-        <strong>${currentMetric}:</strong> ${formatValue(info.object.properties[currentMetric] || 0)}
-      </div>
-    `;
-  }
-  function formatValue(value) {
-    if (value === 0) return '0';
-    const rounded = Number(value.toPrecision(2));
-    return rounded.toLocaleString();
-  }
-  function createLayer() {
-    return new deck.GeoJsonLayer({
-      id: 'county-layer',
-      data: geojson,
-      stroked: true,
-      filled: true,
-      pickable: true,
-      getFillColor: getFillColor,
-      getLineColor: [80, 80, 80, 255],
-      lineWidthMinPixels: 0.6,
-      onHover: onHover,
-      updateTriggers: {
-        getFillColor: [currentPalette, currentMetric]
-      },
-      transitions: {
-        getFillColor: {
-          duration: 3000,
-          easing: t => (--t) * t * t + 1
-        }
-      }
-    });
-  }
-  const deckgl = new deck.DeckGL({
-    container: 'map-container',
-    initialViewState: viewState,
-    controller: true,
-    layers: [createLayer()]
-  });
+    console.log('Map data fetched successfully');
+    const data = await response.json();
+    console.log('Map data parsed successfully');
+    const geojson = data.geojson;
+    const viewState = data.viewState;
 
-  // ----------------------------------------------------------------
-  // updateTitle: Fade out title inner text and the metric icon,
-  // then update text and fade them back in after the width transition.
-  function updateTitle(newText) {
-    const titleElement = document.getElementById('title');
-    const textElement = titleElement.querySelector('.title-text');
-    const iconElement = document.querySelector('#metric-button .metric-icon');
-    const oldWidth = titleElement.offsetWidth;
-    // Fade out inner text and icon over 0.3s
-    textElement.style.transition = 'opacity 0.3s ease';
-    iconElement.style.transition = 'opacity 0.3s ease';
-    textElement.style.opacity = 0;
-    iconElement.style.opacity = 0;
-    setTimeout(() => {
-      // Measure target width off-screen.
-      const tempSpan = document.createElement('span');
-      tempSpan.style.visibility = 'hidden';
-      tempSpan.style.whiteSpace = 'nowrap';
-      const computedStyle = window.getComputedStyle(textElement);
-      tempSpan.style.fontFamily = computedStyle.fontFamily;
-      tempSpan.style.fontSize = computedStyle.fontSize;
-      tempSpan.textContent = newText;
-      document.body.appendChild(tempSpan);
-      const targetWidth = tempSpan.offsetWidth + 30; // add padding
-      document.body.removeChild(tempSpan);
-      // Set container width to oldWidth.
-      titleElement.style.width = oldWidth + 'px';
-      // Force reflow.
-      titleElement.offsetWidth;
-      // Animate container width over 0.7s
-      titleElement.style.transition = 'width 0.7s ease';
-      titleElement.style.width = targetWidth + 'px';
-      titleElement.addEventListener('transitionend', function onTitleWidth(e) {
-        if (e.propertyName === 'width') {
-          titleElement.removeEventListener('transitionend', onTitleWidth);
-          textElement.textContent = newText;
-          // Fade text and icon back in over 0.3s
-          textElement.style.transition = 'opacity 0.3s ease';
-          iconElement.style.transition = 'opacity 0.3s ease';
-          textElement.style.opacity = 1;
-          iconElement.style.opacity = 1;
+    if (!geojson || !viewState) {
+      throw new Error('Invalid data format: missing geojson or viewState');
+    }
+
+    // Compute min and max values for a given metric.
+    function computeMetricRange(metric) {
+      const values = geojson.features.map(f => f.properties[metric] || 0);
+      return [Math.min(...values), Math.max(...values)];
+    }
+    let [minValue, maxValue] = computeMetricRange(currentMetric);
+    function normalizeValue(value) {
+      if (maxValue === minValue) return 0;
+      return (value - minValue) / (maxValue - minValue);
+    }
+    function getFillColor(feature) {
+      const value = feature.properties[currentMetric] || 0;
+      const normalizedValue = normalizeValue(value);
+      const color = chroma.scale(palettes[currentPalette])(normalizedValue).rgb();
+      return [...color, 255];
+    }
+    function onHover(info) {
+      const tooltip = document.getElementById('tooltip');
+      if (!info.object || isDragging) {
+        tooltip.style.display = 'none';
+        return;
+      }
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${info.x}px`;
+      tooltip.style.top = `${info.y}px`;
+      tooltip.innerHTML = `
+        <div style="background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
+          <strong>County:</strong> ${info.object.properties.county}<br/>
+          <strong>${currentMetric}:</strong> ${formatValue(info.object.properties[currentMetric] || 0)}
+        </div>
+      `;
+    }
+    function formatValue(value) {
+      if (value === 0) return '0';
+      const rounded = Number(value.toPrecision(2));
+      return rounded.toLocaleString();
+    }
+    function createLayer() {
+      return new deck.GeoJsonLayer({
+        id: 'county-layer',
+        data: geojson,
+        stroked: true,
+        filled: true,
+        pickable: true,
+        getFillColor: getFillColor,
+        getLineColor: [80, 80, 80, 255],
+        lineWidthMinPixels: 0.6,
+        onHover: onHover,
+        updateTriggers: {
+          getFillColor: [currentPalette, currentMetric]
+        },
+        transitions: {
+          getFillColor: {
+            duration: 3000,
+            easing: t => (--t) * t * t + 1
+          }
         }
       });
-    }, 300);
-  }
+    }
+    const deckgl = new deck.DeckGL({
+      container: 'map-container',
+      initialViewState: viewState,
+      controller: true,
+      layers: [createLayer()]
+    });
 
-  // ----------------------------------------------------------------
-  // updateLegend: Fade out the legend items (colorbar and labels),
-  // hide them completely during transition, update content, then fade in.
-  // The fade timing is synchronized with the title update.
-  function updateLegend() {
-    const legendItems = document.getElementById('legend-items');
-    // Fade out over 0.3s
-    legendItems.style.transition = 'opacity 0.5s ease';
-    legendItems.style.opacity = 0;
-    setTimeout(() => {
-      // Ensure nothing is visible during update
-      legendItems.style.visibility = 'hidden';
-      renderLegend();
-      // Wait for title transition (0.7s) then make legend items visible and fade them in.
+    // ----------------------------------------------------------------
+    // updateTitle: Fade out title inner text and the metric icon,
+    // then update text and fade them back in after the width transition.
+    function updateTitle(newText) {
+      const titleElement = document.getElementById('title');
+      const textElement = titleElement.querySelector('.title-text');
+      const iconElement = document.querySelector('#metric-button .metric-icon');
+      const oldWidth = titleElement.offsetWidth;
+      // Fade out inner text and icon over 0.3s
+      textElement.style.transition = 'opacity 0.3s ease';
+      iconElement.style.transition = 'opacity 0.3s ease';
+      textElement.style.opacity = 0;
+      iconElement.style.opacity = 0;
       setTimeout(() => {
-        legendItems.style.visibility = 'visible';
-        legendItems.style.transition = 'opacity 0.5s ease';
-        legendItems.style.opacity = 1;
-      }, 700);
-    }, 300);
-  }
+        // Measure target width off-screen.
+        const tempSpan = document.createElement('span');
+        tempSpan.style.visibility = 'hidden';
+        tempSpan.style.whiteSpace = 'nowrap';
+        const computedStyle = window.getComputedStyle(textElement);
+        tempSpan.style.fontFamily = computedStyle.fontFamily;
+        tempSpan.style.fontSize = computedStyle.fontSize;
+        tempSpan.textContent = newText;
+        document.body.appendChild(tempSpan);
+        const targetWidth = tempSpan.offsetWidth + 30; // add padding
+        document.body.removeChild(tempSpan);
+        // Set container width to oldWidth.
+        titleElement.style.width = oldWidth + 'px';
+        // Force reflow.
+        titleElement.offsetWidth;
+        // Animate container width over 0.7s
+        titleElement.style.transition = 'width 0.7s ease';
+        titleElement.style.width = targetWidth + 'px';
+        titleElement.addEventListener('transitionend', function onTitleWidth(e) {
+          if (e.propertyName === 'width') {
+            titleElement.removeEventListener('transitionend', onTitleWidth);
+            textElement.textContent = newText;
+            // Fade text and icon back in over 0.3s
+            textElement.style.transition = 'opacity 0.3s ease';
+            iconElement.style.transition = 'opacity 0.3s ease';
+            textElement.style.opacity = 1;
+            iconElement.style.opacity = 1;
+          }
+        });
+      }, 300);
+    }
 
-  // ----------------------------------------------------------------
-  // updateLegendColor: When palette changes, update only the colorbar background.
-  function updateLegendColor() {
-    const gradientElement = document.querySelector('.legend-gradient');
-    if (gradientElement) {
-      // Create an overlay element to hold the new gradient
-      const overlay = document.createElement('div');
-      overlay.style.position = 'absolute';
-      overlay.style.top = '0';
-      overlay.style.left = '0';
-      overlay.style.width = '100%';
-      overlay.style.height = '100%';
-      overlay.style.background = `linear-gradient(to top, ${palettes[currentPalette].join(', ')})`;
-      // Start overlay fully transparent
-      overlay.style.opacity = '0';
-      // Use the same 3s duration and an easing function similar to the map's transition
-      overlay.style.transition = 'opacity 3s ease-out';
-      
-      // Append overlay on top of the current gradient
-      gradientElement.appendChild(overlay);
-      // Force reflow to ensure transition starts
-      void overlay.offsetWidth;
-      // Animate overlay to fully opaque
-      overlay.style.opacity = '1';
-      
-      // After the transition, update the parent's background and remove the overlay
+    // ----------------------------------------------------------------
+    // updateLegend: Fade out the legend items (colorbar and labels),
+    // hide them completely during transition, update content, then fade in.
+    // The fade timing is synchronized with the title update.
+    function updateLegend() {
+      const legendItems = document.getElementById('legend-items');
+      // Fade out over 0.3s
+      legendItems.style.transition = 'opacity 0.5s ease';
+      legendItems.style.opacity = 0;
       setTimeout(() => {
-        gradientElement.style.background = overlay.style.background;
-        gradientElement.removeChild(overlay);
-      }, 3000);
+        // Ensure nothing is visible during update
+        legendItems.style.visibility = 'hidden';
+        renderLegend();
+        // Wait for title transition (0.7s) then make legend items visible and fade them in.
+        setTimeout(() => {
+          legendItems.style.visibility = 'visible';
+          legendItems.style.transition = 'opacity 0.5s ease';
+          legendItems.style.opacity = 1;
+        }, 700);
+      }, 300);
     }
-  }
-  
 
-  // ----------------------------------------------------------------
-  // renderLegend: Build the legend items (colorbar and labels) only.
-  // The legend title ("Count") remains unchanged.
-  // In renderLegend(), update the label transform:
-function renderLegend() {
-  [minValue, maxValue] = computeMetricRange(currentMetric);
-  const legendItems = document.getElementById('legend-items');
-  legendItems.innerHTML = '';
-
-  // Create an inner container for the items.
-  const innerContainer = document.createElement('div');
-  innerContainer.style.display = 'flex';
-  innerContainer.style.alignItems = 'center';
-  // Apply the offset using transform (so it doesn't affect the grid centering of the title).
-  innerContainer.style.transform = `translateX(${legendOffsets[currentMetric]})`;
-
-  const gradientElement = document.createElement('div');
-  gradientElement.className = 'legend-gradient';
-  gradientElement.style.background = `linear-gradient(to top, ${palettes[currentPalette].join(', ')})`;
-
-  const labelsContainer = document.createElement('div');
-  labelsContainer.className = 'legend-labels';
-  // Use evenly distributed positions for labels.
-  const positions = [0, 0.275, 0.5, 0.725, 1];
-  positions.forEach(pos => {
-    const value = maxValue - (maxValue - minValue) * pos;
-    const label = document.createElement('div');
-    label.className = 'legend-label';
-    label.textContent = formatValue(value);
-    label.style.top = `${pos * 100}%`;
-    // Apply transform based on position and shift up by 1px:
-    if (pos === 0) {
-      label.style.transform = 'translateY(0%) translateY(-2px)';
-    } else if (pos === 1) {
-      label.style.transform = 'translateY(-100%) translateY(-2px)';
-    } else {
-      label.style.transform = 'translateY(-50%) translateY(-2px)';
-    }
-    labelsContainer.appendChild(label);
-  });
-  innerContainer.appendChild(gradientElement);
-  innerContainer.appendChild(labelsContainer);
-  legendItems.appendChild(innerContainer);
-}
-
-  // Initial render of legend items.
-  renderLegend();
-
-  // ----------------------------------------------------------------
-  // Palette control events.
-  document.getElementById('palette-control').addEventListener('click', () => {
-    document.getElementById('palette-control-container').classList.toggle('expanded');
-  });
-
-  // Close palette options when clicking outside
-  document.addEventListener('click', (e) => {
-    const paletteContainer = document.getElementById('palette-control-container');
-    const paletteControl = document.getElementById('palette-control');
-    if (!paletteContainer.contains(e.target) && paletteContainer.classList.contains('expanded')) {
-      paletteContainer.classList.remove('expanded');
-    }
-  });
-
-  document.querySelectorAll('.palette-option').forEach(button => {
-    button.addEventListener('click', (e) => {
-      const palette = e.target.dataset.palette;
-      if (palette && palette !== currentPalette) {
-        currentPalette = palette;
-        deckgl.setProps({ layers: [createLayer()] });
-        updateLegendColor();
+    // ----------------------------------------------------------------
+    // updateLegendColor: When palette changes, update only the colorbar background.
+    function updateLegendColor() {
+      const gradientElement = document.querySelector('.legend-gradient');
+      if (gradientElement) {
+        // Create an overlay element to hold the new gradient
+        const overlay = document.createElement('div');
+        overlay.style.position = 'absolute';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.background = `linear-gradient(to top, ${palettes[currentPalette].join(', ')})`;
+        // Start overlay fully transparent
+        overlay.style.opacity = '0';
+        // Use the same 3s duration and an easing function similar to the map's transition
+        overlay.style.transition = 'opacity 3s ease-out';
+        
+        // Append overlay on top of the current gradient
+        gradientElement.appendChild(overlay);
+        // Force reflow to ensure transition starts
+        void overlay.offsetWidth;
+        // Animate overlay to fully opaque
+        overlay.style.opacity = '1';
+        
+        // After the transition, update the parent's background and remove the overlay
+        setTimeout(() => {
+          gradientElement.style.background = overlay.style.background;
+          gradientElement.removeChild(overlay);
+        }, 3000);
       }
-      document.getElementById('palette-control-container').classList.remove('expanded');
-    });
-  });
-
-  // ----------------------------------------------------------------
-  // Metric dropdown events with smooth title transition.
-  document.getElementById('metric-button').addEventListener('click', () => {
-    const options = document.getElementById('metric-options');
-    options.style.display = options.style.display === 'block' ? 'none' : 'block';
-  });
-
-  // Close dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    const metricDropdown = document.getElementById('metric-dropdown');
-    const options = document.getElementById('metric-options');
-    if (!metricDropdown.contains(e.target) && options.style.display === 'block') {
-      options.style.display = 'none';
     }
-  });
+    
 
-  // Handle category button clicks
-  document.querySelectorAll('.metric-category-btn').forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const category = button.parentElement;
-      
-      // Close all other categories first
-      document.querySelectorAll('.metric-category').forEach(otherCategory => {
-        if (otherCategory !== category && otherCategory.classList.contains('expanded')) {
-          otherCategory.classList.remove('expanded');
-        }
-      });
-      
-      // Toggle the clicked category
-      category.classList.toggle('expanded');
-    });
-  });
+    // ----------------------------------------------------------------
+    // renderLegend: Build the legend items (colorbar and labels) only.
+    // The legend title ("Count") remains unchanged.
+    // In renderLegend(), update the label transform:
+    function renderLegend() {
+      [minValue, maxValue] = computeMetricRange(currentMetric);
+      const legendItems = document.getElementById('legend-items');
+      legendItems.innerHTML = '';
 
-  // Handle metric option clicks
-  document.querySelectorAll('.metric-option').forEach(button => {
-    button.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const metric = e.target.dataset.metric;
-      if (metric && metric !== currentMetric) {
-        currentMetric = metric;
-        if (metric === "Population") {
-          updateTitle(`${metric} of Kenya`);
-        } else if (metric === "No Education" || metric === "Lower Primary" || metric === "Upper Primary" || 
-                   metric === "Secondary" || metric === "Middle-Level College" || metric === "University Undergraduate" || 
-                   metric === "University Masters/PhD" || metric === "Adult Basic Education" || 
-                   metric === "Vocational Training" || metric === "Madrasa/Duksi") {
-          updateTitle(`Education Level: ${metric}`);
-        } else if (metric === "Married Monogamous" || metric === "Married Polygamous" || 
-                   metric === "Living Together" || metric === "Separated" || metric === "Divorced" || 
-                   metric === "Widow or Widowed" || metric === "Never Married") {
-          updateTitle(`Marital Status: ${metric}`);
-        } else if (metric === "Bungalow" || metric === "Flat" || metric === "Maisonnette" || metric === "Swahili" || 
-                   metric === "Shanty" || metric === "Manyatta/Traditional House" || metric === "Landhie") {
-          updateTitle(`Housing Type: ${metric}`);
-        } else if (metric === "Owns" || metric === "Pays Rent/Lease" || metric === "No Rent, with Consent of Owner" || metric === "No Rent, Squatting") {
-          updateTitle(`Housing Tenure: ${metric}`);
-        } else if (metric === "Electricity" || metric === "Paraffin" || metric === "LPG (Gas)" || 
-                   metric === "Biogas" || metric === "Firewood" || metric === "Charcoal") {
-          updateTitle(`Cooking Energy Source: ${metric}`);
+      // Create an inner container for the items.
+      const innerContainer = document.createElement('div');
+      innerContainer.style.display = 'flex';
+      innerContainer.style.alignItems = 'center';
+      // Apply the offset using transform (so it doesn't affect the grid centering of the title).
+      innerContainer.style.transform = `translateX(${legendOffsets[currentMetric]})`;
+
+      const gradientElement = document.createElement('div');
+      gradientElement.className = 'legend-gradient';
+      gradientElement.style.background = `linear-gradient(to top, ${palettes[currentPalette].join(', ')})`;
+
+      const labelsContainer = document.createElement('div');
+      labelsContainer.className = 'legend-labels';
+      // Use evenly distributed positions for labels.
+      const positions = [0, 0.275, 0.5, 0.725, 1];
+      positions.forEach(pos => {
+        const value = maxValue - (maxValue - minValue) * pos;
+        const label = document.createElement('div');
+        label.className = 'legend-label';
+        label.textContent = formatValue(value);
+        label.style.top = `${pos * 100}%`;
+        // Apply transform based on position and shift up by 1px:
+        if (pos === 0) {
+          label.style.transform = 'translateY(0%) translateY(-2px)';
+        } else if (pos === 1) {
+          label.style.transform = 'translateY(-100%) translateY(-2px)';
         } else {
-          updateTitle(`${metric} in Kenya`);
+          label.style.transform = 'translateY(-50%) translateY(-2px)';
         }
-        [minValue, maxValue] = computeMetricRange(currentMetric);
-        deckgl.setProps({ layers: [createLayer()] });
-        updateLegend();
-      }
-      // Close all expanded categories
-      document.querySelectorAll('.metric-category').forEach(category => {
-        category.classList.remove('expanded');
+        labelsContainer.appendChild(label);
       });
-      document.getElementById('metric-options').style.display = 'none';
+      innerContainer.appendChild(gradientElement);
+      innerContainer.appendChild(labelsContainer);
+      legendItems.appendChild(innerContainer);
+    }
+
+    // Initial render of legend items.
+    renderLegend();
+
+    // ----------------------------------------------------------------
+    // Palette control events.
+    document.getElementById('palette-control').addEventListener('click', () => {
+      document.getElementById('palette-control-container').classList.toggle('expanded');
     });
-  });
+
+    // Close palette options when clicking outside
+    document.addEventListener('click', (e) => {
+      const paletteContainer = document.getElementById('palette-control-container');
+      const paletteControl = document.getElementById('palette-control');
+      if (!paletteContainer.contains(e.target) && paletteContainer.classList.contains('expanded')) {
+        paletteContainer.classList.remove('expanded');
+      }
+    });
+
+    document.querySelectorAll('.palette-option').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const palette = e.target.dataset.palette;
+        if (palette && palette !== currentPalette) {
+          currentPalette = palette;
+          deckgl.setProps({ layers: [createLayer()] });
+          updateLegendColor();
+        }
+        document.getElementById('palette-control-container').classList.remove('expanded');
+      });
+    });
+
+    // ----------------------------------------------------------------
+    // Metric dropdown events with smooth title transition.
+    document.getElementById('metric-button').addEventListener('click', () => {
+      const options = document.getElementById('metric-options');
+      options.style.display = options.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const metricDropdown = document.getElementById('metric-dropdown');
+      const options = document.getElementById('metric-options');
+      if (!metricDropdown.contains(e.target) && options.style.display === 'block') {
+        options.style.display = 'none';
+      }
+    });
+
+    // Handle category button clicks
+    document.querySelectorAll('.metric-category-btn').forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const category = button.parentElement;
+        
+        // Close all other categories first
+        document.querySelectorAll('.metric-category').forEach(otherCategory => {
+          if (otherCategory !== category && otherCategory.classList.contains('expanded')) {
+            otherCategory.classList.remove('expanded');
+          }
+        });
+        
+        // Toggle the clicked category
+        category.classList.toggle('expanded');
+      });
+    });
+
+    // Handle metric option clicks
+    document.querySelectorAll('.metric-option').forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const metric = e.target.dataset.metric;
+        if (metric && metric !== currentMetric) {
+          currentMetric = metric;
+          if (metric === "Population") {
+            updateTitle(`${metric} of Kenya`);
+          } else if (metric === "No Education" || metric === "Lower Primary" || metric === "Upper Primary" || 
+                     metric === "Secondary" || metric === "Middle-Level College" || metric === "University Undergraduate" || 
+                     metric === "University Masters/PhD" || metric === "Adult Basic Education" || 
+                     metric === "Vocational Training" || metric === "Madrasa/Duksi") {
+            updateTitle(`Education Level: ${metric}`);
+          } else if (metric === "Married Monogamous" || metric === "Married Polygamous" || 
+                     metric === "Living Together" || metric === "Separated" || metric === "Divorced" || 
+                     metric === "Widow or Widowed" || metric === "Never Married") {
+            updateTitle(`Marital Status: ${metric}`);
+          } else if (metric === "Bungalow" || metric === "Flat" || metric === "Maisonnette" || metric === "Swahili" || 
+                     metric === "Shanty" || metric === "Manyatta/Traditional House" || metric === "Landhie") {
+            updateTitle(`Housing Type: ${metric}`);
+          } else if (metric === "Owns" || metric === "Pays Rent/Lease" || metric === "No Rent, with Consent of Owner" || metric === "No Rent, Squatting") {
+            updateTitle(`Housing Tenure: ${metric}`);
+          } else if (metric === "Electricity" || metric === "Paraffin" || metric === "LPG (Gas)" || 
+                     metric === "Biogas" || metric === "Firewood" || metric === "Charcoal") {
+            updateTitle(`Cooking Energy Source: ${metric}`);
+          } else {
+            updateTitle(`${metric} in Kenya`);
+          }
+          [minValue, maxValue] = computeMetricRange(currentMetric);
+          deckgl.setProps({ layers: [createLayer()] });
+          updateLegend();
+        }
+        // Close all expanded categories
+        document.querySelectorAll('.metric-category').forEach(category => {
+          category.classList.remove('expanded');
+        });
+        document.getElementById('metric-options').style.display = 'none';
+      });
+    });
+  } catch (error) {
+    console.error('Error loading map data:', error);
+  }
 });
