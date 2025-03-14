@@ -4,8 +4,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   let isDragging = false;
   let deckgl;
 
-  // Destructure required components from the global deck object
-  const {DeckGL, GeoJsonLayer} = deck;
+  // Get deck.gl components from the global scope
+  const {DeckGL} = deck;
+  const {GeoJsonLayer} = deck.layers;
 
   // Updated hardcoded legend offsets for each metric.
   const legendOffsets = {
