@@ -5,8 +5,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let deckgl;
 
   // Get deck.gl components from the global scope
-  const {DeckGL} = deck;
-  const {GeoJsonLayer} = deck.layers;
+  const {DeckGL, GeoJsonLayer} = deck;
 
   // Updated hardcoded legend offsets for each metric.
   const legendOffsets = {
