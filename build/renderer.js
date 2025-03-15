@@ -2,10 +2,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   let currentPalette = 'red';
   let currentMetric = 'Population';
   let isDragging = false;
-  let deckgl;
-
-  // Get deck.gl components from the global scope
-  const {DeckGL, GeoJsonLayer} = deck;
+  let svg, path, projection;
 
   // Updated hardcoded legend offsets for each metric.
   const legendOffsets = {
@@ -101,6 +98,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       throw new Error('Invalid data format: missing geojson data');
     }
 
+    // Set up the map container
+    const container = d3.select('#map-container');
+    const width = container.node().offsetWidth;
+    const height = container.node().offsetHeight;
+
+    // Create SVG
+    svg = container.append('svg')
+      .attr('width', width)
+      .attr('height', height);
+
+    // Create projection
+    projection = d3.geoMercator()
+      .fitSize([width, height], geojson);
+
+    // Create path generator
+    path = d3.geoPath().projection(projection);
+
+    // Add zoom behavior
+    const zoom = d3.zoom()
+      .scaleExtent([1, 8])
+      .on('zoom', (event) => {
+        svg.selectAll('path')
+          .attr('transform', event.transform);
+      });
+
+    svg.call(zoom);
+
     // Compute min and max values for a given metric
     function computeMetricRange(metric) {
       const values = geojson.features.map(f => f.properties[metric] || 0);
@@ -116,8 +140,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     function getFillColor(feature) {
       const value = feature.properties[currentMetric] || 0;
       const normalizedValue = normalizeValue(value);
-      const color = chroma.scale(palettes[currentPalette])(normalizedValue).rgb();
-      return [...color, 255];
+      const color = chroma.scale(palettes[currentPalette])(normalizedValue).hex();
+      return color;
+    }
+
+    function updateMap() {
+      svg.selectAll('path')
+        .data(geojson.features)
+        .join('path')
+        .attr('d', path)
+        .attr('fill', getFillColor)
+        .attr('stroke', '#505050')
+        .attr('stroke-width', '0.5')
+        .on('mousemove', function(event, d) {
+          const tooltip = d3.select('#tooltip');
+          tooltip.style('display', 'block')
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY + 10) + 'px')
+            .html(`
+              <div style="background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
+                <strong>County:</strong> ${d.properties.county}<br/>
+                <strong>${currentMetric}:</strong> ${formatValue(d.properties[currentMetric] || 0)}
+              </div>
+            `);
+        })
+        .on('mouseout', function() {
+          d3.select('#tooltip').style('display', 'none');
+        });
     }
 
     function formatValue(value) {
@@ -126,77 +175,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       return rounded.toLocaleString();
     }
 
-    // Initialize deck.gl
-    const INITIAL_VIEW_STATE = {
-      latitude: 0.5,
-      longitude: 37.5,
-      zoom: 5.2,
-      maxZoom: 16,
-      pitch: 0,
-      bearing: 0
-    };
-
-    deckgl = new DeckGL({
-      container: 'map-container',
-      initialViewState: INITIAL_VIEW_STATE,
-      controller: true,
-      onViewStateChange: ({viewState}) => {
-        deckgl.setProps({viewState});
-      },
-      getTooltip: ({object}) => {
-        if (!object || isDragging) return null;
-        
-        return {
-          html: `
-            <div style="background: rgba(255,255,255,0.8); padding: 5px; border-radius: 5px;">
-              <strong>County:</strong> ${object.properties.county}<br/>
-              <strong>${currentMetric}:</strong> ${formatValue(object.properties[currentMetric] || 0)}
-            </div>
-          `,
-          style: {
-            backgroundColor: 'transparent',
-            boxShadow: 'none'
-          }
-        };
-      },
-      layers: [
-        new GeoJsonLayer({
-          id: 'geojson',
-          data: geojson,
-          pickable: true,
-          stroked: true,
-          filled: true,
-          extruded: false,
-          lineWidthScale: 1,
-          lineWidthMinPixels: 1,
-          getFillColor: getFillColor,
-          getLineColor: [80, 80, 80, 255],
-          getLineWidth: 1
-        })
-      ]
-    });
-
-    function updateMap() {
-      [minValue, maxValue] = computeMetricRange(currentMetric);
-      deckgl.setProps({
-        layers: [
-          new GeoJsonLayer({
-            id: 'geojson',
-            data: geojson,
-            pickable: true,
-            stroked: true,
-            filled: true,
-            extruded: false,
-            lineWidthScale: 1,
-            lineWidthMinPixels: 1,
-            getFillColor: getFillColor,
-            getLineColor: [80, 80, 80, 255],
-            getLineWidth: 1
-          })
-        ]
-      });
-      updateLegend();
-    }
+    // Initial map render
+    updateMap();
 
     // ----------------------------------------------------------------
     // updateTitle: Fade out title inner text and the metric icon,
@@ -298,9 +278,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         }, 3000);
       }
     }
+    
 
     // ----------------------------------------------------------------
     // renderLegend: Build the legend items (colorbar and labels) only.
+    // The legend title ("Count") remains unchanged.
+    // In renderLegend(), update the label transform:
     function renderLegend() {
       [minValue, maxValue] = computeMetricRange(currentMetric);
       const legendItems = document.getElementById('legend-items');
@@ -435,7 +418,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           } else {
             updateTitle(`${metric} in Kenya`);
           }
+          [minValue, maxValue] = computeMetricRange(currentMetric);
           updateMap();
+          updateLegend();
         }
         // Close all expanded categories
         document.querySelectorAll('.metric-category').forEach(category => {

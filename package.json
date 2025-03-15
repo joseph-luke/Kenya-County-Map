@@ -6,19 +6,16 @@
     "scripts": {
         "start": "serve .",
         "clean": "rimraf build",
-        "build": "npm run clean && mkdir build && copy index.html build\\ && copy style.css build\\ && copy renderer.js build\\ && copy county_map_data.json build\\ && copy package.json build\\",
-        "predeploy": "npm run build",
-        "deploy": "gh-pages -d build"
+        "build": "npm run clean && mkdir build && copy index.html build\\ && copy style.css build\\ && copy renderer.js build\\ && copy county_map_data.json build\\ && copy package.json build\\"
     },
     "author": "Your Name",
     "license": "MIT",
     "dependencies": {
         "chroma-js": "^2.1.0",
-        "d3": "^7.8.5",
+        "deck.gl": "8.9.32",
         "serve": "^14.2.1"
     },
     "devDependencies": {
-        "gh-pages": "^6.3.0",
         "rimraf": "^5.0.5"
     },
     "build": {
@@ -28,6 +25,5 @@
         "win": {
             "target": "portable"
         }
-    },
-    "homepage": "https://joseph-luke.github.io/Kenya-County-Map"
+    }
 }

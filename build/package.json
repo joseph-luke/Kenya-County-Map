@@ -14,7 +14,7 @@
     "license": "MIT",
     "dependencies": {
         "chroma-js": "^2.1.0",
-        "deck.gl": "8.9.32",
+        "d3": "^7.8.5",
         "serve": "^14.2.1"
     },
     "devDependencies": {
